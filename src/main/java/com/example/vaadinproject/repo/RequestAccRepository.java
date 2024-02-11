@@ -12,6 +12,9 @@ import java.util.List;
 public interface RequestAccRepository extends JpaRepository<RequestAcc, Long> {
 
     List<RequestAcc> findAll();
+    List<RequestAcc> findAll2();
+
+
 
     @Query("SELECT acc FROM RequestAcc acc WHERE (:firstName is null or acc.firstName = :firstName) " +
            "OR (:lastName is null or acc.lastName = :lastName)")
