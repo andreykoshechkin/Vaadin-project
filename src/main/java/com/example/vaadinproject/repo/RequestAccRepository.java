@@ -12,7 +12,7 @@ import java.util.List;
 public interface RequestAccRepository extends JpaRepository<RequestAcc, Long> {
 
     List<RequestAcc> findAll();
-    List<RequestAcc> findAll2();
+
 
 
 
