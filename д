@@ -102,3 +102,125 @@ class ClientInfo {
         return kiG;
     }
 }
+------------------------------------
+import java.math.BigDecimal;
+import java.util.List;
+
+public class ConditionHandlerChain {
+
+    // Интерфейс для обработчика условий
+    private interface ConditionHandler {
+        boolean handle(List<ClientInfo> clientInfo);
+        ConditionHandler setNext(ConditionHandler nextHandler);
+    }
+
+    // Обработчик для проверки типа клиентов
+    private static class TypeConditionHandler implements ConditionHandler {
+        private ConditionHandler nextHandler;
+
+        @Override
+        public ConditionHandler setNext(ConditionHandler nextHandler) {
+            this.nextHandler = nextHandler;
+            return nextHandler;
+        }
+
+        @Override
+        public boolean handle(List<ClientInfo> clientInfo) {
+            // Проверяем наличие клиентов типа ЮР или ИП
+            boolean result = clientInfo.stream()
+                    .anyMatch(it -> it.getClientType().equals("ЮР") || it.getClientType().equals("ИП"));
+            // Если результат true и есть следующий обработчик, передаем управление ему
+            if (result && nextHandler != null) {
+                return nextHandler.handle(clientInfo);
+            }
+            return result;
+        }
+    }
+
+    // Обработчик для проверки наличия КИГ 545, 546 или 547
+    private static class KiGConditionHandler implements ConditionHandler {
+        private ConditionHandler nextHandler;
+
+        @Override
+        public ConditionHandler setNext(ConditionHandler nextHandler) {
+            this.nextHandler = nextHandler;
+            return nextHandler;
+        }
+
+        @Override
+        public boolean handle(List<ClientInfo> clientInfo) {
+            // Проверяем отсутствие КИГ 545, 546 или 547
+            boolean result = !clientInfo.stream()
+                    .anyMatch(it -> it.getKiG().equals(BigDecimal.valueOf(545)) ||
+                            it.getKiG().equals(BigDecimal.valueOf(546)) ||
+                            it.getKiG().equals(BigDecimal.valueOf(547)));
+            // Если результат true и есть следующий обработчик, передаем управление ему
+            if (result && nextHandler != null) {
+                return nextHandler.handle(clientInfo);
+            }
+            return result;
+        }
+    }
+
+    // Обработчик для проверки отсутствия матрицы в части переводов на ФЛ (киг 534, 535, 536)
+    private static class MatrixConditionHandler implements ConditionHandler {
+        private ConditionHandler nextHandler;
+
+        @Override
+        public ConditionHandler setNext(ConditionHandler nextHandler) {
+            this.nextHandler = nextHandler;
+            return nextHandler;
+        }
+
+        @Override
+        public boolean handle(List<ClientInfo> clientInfo) {
+            // Проверяем отсутствие КИГ 534, 535, 536
+            boolean result = !clientInfo.stream()
+                    .anyMatch(it -> it.getKiG().equals(BigDecimal.valueOf(534)) ||
+                            it.getKiG().equals(BigDecimal.valueOf(535)) ||
+                            it.getKiG().equals(BigDecimal.valueOf(536)));
+            // Если результат true и есть следующий обработчик, передаем управление ему
+            if (result && nextHandler != null) {
+                return nextHandler.handle(clientInfo);
+            }
+            return result;
+        }
+    }
+
+    // Метод для получения результата проверки условий
+    public Pair<Boolean, String> result(List<ClientInfo> clientInfo) {
+        // Создаем экземпляры обработчиков
+        ConditionHandler typeHandler = new TypeConditionHandler();
+        ConditionHandler kiGHandler = new KiGConditionHandler();
+        ConditionHandler matrixHandler = new MatrixConditionHandler();
+
+        // Устанавливаем цепочку обработчиков
+        typeHandler.setNext(kiGHandler).setNext(matrixHandler);
+
+        // Обрабатываем запрос цепочкой обработчиков
+        boolean flag = typeHandler.handle(clientInfo);
+
+        return Pair.of(flag, "msg"); // Возвращаем результат
+    }
+
+    // Класс для хранения информации о клиентах
+    static class ClientInfo {
+        private String clientType;
+        private BigDecimal kiG;
+
+        // Конструктор
+        public ClientInfo(String clientType, BigDecimal kiG) {
+            this.clientType = clientType;
+            this.kiG = kiG;
+        }
+
+        // Геттеры
+        public String getClientType() {
+            return clientType;
+        }
+
+        public BigDecimal getKiG() {
+            return kiG;
+        }
+    }
+}
