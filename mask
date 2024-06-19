@@ -1,0 +1,78 @@
+public class MaskedTextField extends TextField {
+
+    private String mask;
+    private int staticCharacters; // Количество статичных символов в начале
+
+    public MaskedTextField(String mask) {
+        super();
+        this.mask = mask;
+        this.staticCharacters = 4; // Первые 4 символа статичны
+
+        setPlaceholder(mask); // Устанавливаем маску в качестве placeholder для подсказки пользователю
+
+        addValueChangeListener(event -> {
+            String value = event.getValue();
+            // Форматируем значение в соответствии с маской
+            String formattedValue = formatValue(value);
+            setValue(formattedValue);
+        });
+
+        // Ограничиваем ввод только символами, которые соответствуют маске
+        setPattern("[0-9\\s]*"); // Пример для маски, которая принимает только цифры и пробелы
+    }
+
+    private String formatValue(String value) {
+        StringBuilder formatted = new StringBuilder();
+        int maskIndex = 0;
+        int valueIndex = 0;
+
+        while (maskIndex < mask.length() && valueIndex < value.length()) {
+            char maskChar = mask.charAt(maskIndex);
+            char valueChar = value.charAt(valueIndex);
+
+            if (maskIndex < staticCharacters) {
+                formatted.append(maskChar);
+                maskIndex++;
+            } else {
+                if (maskChar == '9') {
+                    if (Character.isDigit(valueChar)) {
+                        formatted.append(valueChar);
+                        valueIndex++;
+                    }
+                } else {
+                    formatted.append(maskChar);
+                }
+                maskIndex++;
+            }
+        }
+
+        return formatted.toString();
+    }
+
+    @Override
+    public void setValue(String value)   {
+        if (value != null && value.length() > staticCharacters) {
+            super.setValue(value);
+        } else {
+            super.setValue(mask);
+        }
+    }
+
+    @Override
+    public void setValue(String value, boolean repaintIsNotNeeded)   {
+        if (value != null && value.length() > staticCharacters) {
+            super.setValue(value, repaintIsNotNeeded);
+        } else {
+            super.setValue(mask, repaintIsNotNeeded);
+        }
+    }
+
+    @Override
+    public void setCursorPosition(int position) {
+        if (position <= staticCharacters) {
+            super.setCursorPosition(staticCharacters); // Устанавливаем курсор после статичных символов
+        } else {
+            super.setCursorPosition(position);
+        }
+    }
+}
